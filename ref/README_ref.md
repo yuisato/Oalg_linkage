@@ -1,5 +1,5 @@
 This folder contains the following reference sequences used in the publication. 
-They are downloadable from public databases with the accession numbers included in the publication, or reproducible with the scripts in this deposit, but they are placed here for your convenience!
+They are downloadable from public databases with the accession numbers included in the publication, or reproducible with the scripts in this repository, but they are placed here for your convenience!
 
 * Symbiont genome bins (MAGs)
 	*	Ca. Thiosymbion (=Gamma1, as formerly known)

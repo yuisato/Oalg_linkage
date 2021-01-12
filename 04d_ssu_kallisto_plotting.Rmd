@@ -1,0 +1,35 @@
+
+```{r}
+#R v3.4.2
+
+#packages
+library(ggplot2)
+
+#Relative abundance data based on SSU sequences is saved as <all.kallisto.ssu.symb.composition.txt> (tab separated) in the working directory.
+#Example
+# sampleID	symbiont_clade	TPM	relative_to_host-SSU	relative_in_symbiont-SSU
+# OalgCAVL_A11	Delta1	38009.600	0.060	0.102
+# OalgCAVL_A11	Delta3	0.000	0.000	0.000
+# OalgCAVL_A11	Delta4	21908.800	0.035	0.059
+# OalgCAVL_A11	Gamma1	136426.000	0.217	0.367
+# OalgCAVL_A11	Gamma3	139604.000	0.222	0.376
+# OalgCAVL_A11	Spirochete	35733.100	0.057	0.096
+
+data <- read.csv(file="all.kallisto.ssu.symb.composition_SANT-CAVL_AB_NCBI.txt", sep="\t", header=T)
+data$symbiont_clade <- factor(data$symbiont_clade, levels =c("Gamma1","Gamma3","Delta1","Delta3","Delta4","Spirochete"))
+colours <- c('#66C2A5','#FC8D62','#8DA0CB','#A6D854','#FFD92F','#E5C494')
+ggplot(data, aes(x=hap_loc_ID, y=relative_in_symbiont.SSU, fill=symbiont_clade)) + 
+  geom_bar(position=position_fill(reverse = TRUE), stat="identity", colour = "black", size=0.2) +
+  scale_fill_manual(values=colours) + 
+  theme_bw() +
+  xlab("Sample ID") +
+  ylab("relative abundance") +
+  ggtitle("Symbiont composition based on SSU rRNA genes") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.4)) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  ggsave("SSU_kallisto_symb_compositions.pdf", width = 14, height = 10)
+  #Minor manual edits were added using an illustration software.
+```

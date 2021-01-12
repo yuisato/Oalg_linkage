@@ -1,0 +1,73 @@
+
+```{r}
+#R v3.4.2
+
+#packages
+library(ggplot2)  #v3.2.1
+library(FSA)      #v0.8.25
+
+### Plotting of symbiont compositions based on single-copy gene Kallisto assessment
+#Summary table for single copy gene abundance (mean TPM of IQR) and relative abundance within symbionts is saved as <all.kallisto.scg.symb.composition.txt> (tab delimited) in the working directory.
+#Example
+#sampleID	    symbiont	meanTPM(IQR)	relative_abundance
+#OalgCAVL_A11	Delta1a	        27.272	0.019
+#OalgCAVL_A11	Delta1b	        101.528	0.07
+#OalgCAVL_A11	Delta3	        0	0
+#OalgCAVL_A11	Delta4	        157.158	0.108
+#...
+
+data <- read.csv(file="all.kallisto.scg.symb.composition.txt", sep="\t", header=T)
+data$symbiont <- factor(data$symbiont, levels =c("Gamma1","Gamma3","Delta1a","Delta1b", "Delta3","Delta4","Spiro"))
+colours <- c('#66C2A5','#FC8D62','#8DA0CB','#E78AC3','#A6D854','#FFD92F','#E5C494')
+ggplot(data, aes(x=sampleID, y=relative_abundance, fill=symbiont)) + 
+  geom_bar(position=position_fill(reverse = TRUE), stat="identity", colour = "black", size=0.2) +
+  scale_fill_manual(values=colours) + 
+  theme_bw() +
+  xlab("Sample ID") +
+  ylab("relative abundance") +
+  ggtitle("Symbiont composition based on single-copy genes") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.4)) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  ggsave("SCG_kallisto_symb_compositions.pdf", width = 14, height = 10)
+  #Minor manual edits were added using an illustration software.
+
+
+### Checking the average and standard deviation of relative abundance across single-copy genes per symbiont to check for patterns of duplication and potential high overages due to repeat sequence elements.
+#Input data is saved as <all.kallisto.scg.prop.txt> (tab delimited).
+#Example
+#sample	symbiont	gene	tmp	prop
+#OalgCAVL_A11	 Delta1a	 Delta1a_NODE_175383+_length_5090_cov_452.122_2	0	0
+#OalgCAVL_A11	 Delta1a	 Delta1a_NODE_175170+_length_15549_cov_216.421_5	15.578	0.0019
+#OalgCAVL_A11	 Delta1a	 Delta1a_NODE_173616+_length_4066_cov_549.678_3	8.921	0.0011
+#...
+
+#Import data
+scg <-  read.csv(file="all.kallisto.scg.prop.txt", header=T, sep="\t", strip.white = TRUE)
+###Summarize data
+su <- Summarize(prop ~ gene, data=scg, digits=6); su
+write.csv(su, file="summary_stats.txt")
+#Manual modification to the summary stat table to add "symb" (symbiont species) and "gene_id" (a short form of gene, with a series number), and sorted in the order of mean relative abundance "mean".
+#<summary_stats_mod.txt>
+#symb	gene	gene_id	n	mean	sd	se	sd_prop	min	Q1	median	Q3	max	percZero
+#Delta1a	 NODE_105285_37	g001	51	0.000459	0.001056	0.000148	2.30065	0	0	0	0	0.0061	76.470588
+#Delta1a	 NODE_105285_22	g002	51	0.000553	0.001443	0.000202	2.6094	0	0	0	0	0.0073	82.352941
+#Delta1a	 NODE_105285_21	g003	51	0.001529	0.00231	0.000323	1.51079	0	0	5.00E-04	0.002	0.0091	49.019608
+#...
+su_mod <- read.csv(file="summary_stats_mod.txt", header=T, sep="\t", strip.white = TRUE)
+
+#Plotting
+library(ggthemes); theme_set(theme_classic()) #v4.2.0
+ggplot(su_mod, aes(gene_id, mean)) +
+    geom_bar(stat="identity", color="plum") +
+    labs(x="single-copy genes (ordered by relative coverage)",
+         y="relative coverage (mean +/- s.d.)") +
+    theme(axis.text.x=element_blank(),
+          axis.ticks.x=element_blank()) +
+    facet_grid(symb ~ ., scales="free") +
+    geom_linerange(aes(ymin=mean-sd, ymax=mean+sd), alpha=0.2, position=position_dodge(.9)) + 
+    ggsave("SCG_raw-output_graphs_rel-cover_per-gene_per-symb.pdf", width = 7, height = 9)
+    #Minor manual edits were added using an illustration software.
+```

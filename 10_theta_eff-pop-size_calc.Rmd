@@ -1,0 +1,55 @@
+```{r}
+### Effective pop size estimates from Watterson's theta estimate
+#R v3.4.2
+
+#Copy the following result files in the working directory
+# theta_input_SANT-CAVL_cutoff-5.txt
+
+#Input data contain the number of SNPs/site (x), and the mean coverage (n). The coverage is filtered >5.
+# The number of SNPs/site and mean coverage for all samples for all symbionts were obtained using the method by Ansorge et al. 2019 Nat Microbiol 4, 2487-2497.
+#<theta_input_SANT-CAVL_cutoff-5.txt> Example
+#   symb	x	n
+#   Delta1a	 0.0000371037 	91.0645
+#   Delta1a	 0.0000793528 	20.194
+#   Gamma1	 0.0004149060 	44.6
+#   Gamma1	 0.0005927120 	157.8
+#   Spirochete	 0.0005789660 	34.3277
+#   Spirochete	 0.0004812730 	9.24023
+#...
+
+#Packages
+library(pegas)      # v0.14
+library(ggplot2)    # v3.3.2
+library(FSA)        # v0.8.30
+library(rcompanion) # v2.3.25
+library(dplyr)      # v1.0.2
+
+#Importing data
+input= read.table("theta_input_SANT-CAVL_cutoff-5.txt", sep="\t", header=T)  #set your input file name. 
+input$Theta <- NA
+input$Ne <- NA
+
+#Calculation of Watterson's theta and effective population size (Ne).
+for (i in 1:nrow(input)) {
+  input[i,"Theta"] <- theta.s (input[i,"x"], input[i,"n"])
+  input[i,"Ne"] <- input[i,"Theta"]/2/2.72545E-10   #mutation rate was calculated separately using published data.
+}
+
+#Plotting of Ne
+input$symb <- factor(input$symb, levels = c("Gamma1","Gamma3","Delta1a","Delta1b","Delta3","Delta4","Spirochete"))
+ggplot(input, aes(symb,Ne))+
+  geom_boxplot()+
+  theme_classic()+
+  scale_y_log10()+
+  ggsave("Effective_pop_size_estimates_SANT-CAVL_cutoff-5.pdf",width=5, height=5)
+
+#Statistical tests
+Summarize(Ne ~ symb, data=input, digits=10) -> S; print(S)
+#exclude Delta3 as there are not enough replicates for testing.
+input = filter(input, symb != "Delta3")
+Summarize(Ne ~ symb, data=input, digits=10) -> S; print(S)
+kruskal.test(Ne ~ symb, data=input) -> K; print(K)
+epsilonSquared(x = input$Ne, g = input$symb) -> E; print(E)
+dunnTest(Ne ~ symb, data=input, method="bh") -> DT; print(DT)
+cldList(P.adj ~ Comparison, data=DT$res, threshold = 0.05)
+```

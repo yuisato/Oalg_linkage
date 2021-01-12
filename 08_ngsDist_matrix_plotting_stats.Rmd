@@ -1,0 +1,154 @@
+```{r}
+###Pairwise genetic distance comparisons mitochondria and symbionts within and between host groups.
+#R v3.4.2
+
+#Copy the following result files in the working directory
+# Delta1a_pairdist_test-set_combined.tsv
+# Delta1b_pairdist_test-set_combined.tsv
+# Delta4_pairdist_test-set_combined.tsv
+# Gamma1_pairdist_test-set_combined.tsv
+# Gamma3_pairdist_test-set_combined.tsv
+# Mito_pairdist_test-set_combined.tsv
+# Spiro_pairdist_test-set_combined.tsv
+
+#Input data examples:
+#<Delta1a_pairdist_test-set_combined.tsv>
+# Group	Distance
+# Within	0.1703668215
+# Within	0.1220322560
+# Within	0.0742418114
+# AvsB	0.0907373881
+# AvsB	0.1265397413
+# AvsB	0.0511832192
+# SAvsCA	0.0768482413
+# SAvsCA	0.0597187929
+# ...
+
+#Packages
+library(FSA)        # v0.8.30
+library(ggplot2)    # v3.3.2
+library(ggthemes)   # v4.2.0
+library(rcompanion) # v2.3.25
+library(vegan)      # v2.5-6
+
+##Plotting pairwise genetic distances Within (combined of 4 host groups), AvsB (combined with SANT and CAVL), and SAvsCA (combined with A and B) host groups for mitochondria and symbionts.
+pair_dist_plot-test <- function(target) {
+  theme_set(theme_classic())
+  test <- read.table(file=paste(target,"_pairdist_test-set_combined.tsv", sep=""), header=T, sep="\t")
+  test$Group <- factor(test$Group, levels = c("Within","AvsB","SAvsCA"))
+  ggplot(test, aes(Group, Distance))+
+    geom_boxplot(varwidth=F, fill="grey50", alpha=0.5, size=0.5)+
+    labs(x="Group", y=paste("Pairwise distance (", target, ")", sep=""))+
+    ggsave(paste("Pairdist_3groups_tested_boxplot_",target,".pdf", sep=""), width = 2, height = 3) 
+  ggplot(test, aes(Group, Distance))+
+    geom_boxplot(varwidth=F, fill="grey50", alpha=0.5, size=0.5)+
+    labs(x="Group", y=paste("Pairwise distance (", target, ")", sep=""))+
+    coord_cartesian(ylim=c(0, 0.5))+  
+    ggsave(paste("Pairdist_3groups_tested_boxplot_",target,"_y0.5.pdf", sep=""), width = 2, height = 3) 
+  Summarize(Distance ~ Group, data=test, digits=6) -> S; print(S)
+  kruskal.test(Distance ~ Group, data=test) -> K; print(K)
+  epsilonSquared(x = test$Distance, g = test$Group) -> E; print(E)
+  dunnTest(Distance ~ Group, data=test, method="bh") -> DT; print(DT)
+  cldList(P.adj ~ Comparison, data=DT$res, threshold = 0.05)
+}
+pair_dist_plot-test("Mito")
+pair_dist_plot-test("Gamma1")
+pair_dist_plot-test("Gamma3")
+pair_dist_plot-test("Delta1a")
+pair_dist_plot-test("Delta1b")
+pair_dist_plot-test("Delta4")
+pair_dist_plot-test("Spiro")
+
+
+
+##Correlation tests (Mantel tests) between pairwise distances of mitochondria and each symbiont.
+#ngsDdist outpuy files were first edited into matrices suited for mantel tests below using a custom script.
+#For comparisons of symbionts that some samples were excluded, corresponding matrices of mitochondria were also made.
+
+#Format is as follows:
+#<example>
+#             OalgCAVL_A12  OalgCAVL_A14	OalgCAVL_A15
+#OalgCAVL_A14	0.104098273		
+#OalgCAVL_A15	0.149586292   0.069316974	
+#OalgCAVL_A16	0.093931157   0.114553373   0.166782611
+
+#Import dist matrix for ALL samples (mito, gamma1, gamma3)
+mito <- as.dist(read.table("mito_all.txt", sep="\t", header = T, row.names = 1))
+gamma1 <- as.dist(read.table("gamma1.txt", sep="\t", header = T, row.names = 1))
+gamma3 <- as.dist(read.table("gamma3.txt", sep="\t", header = T, row.names = 1))
+
+#Import dist matrix for filtered samples (delta1a, delta1b, delta4, spiro, and corresponding mito)
+delta1a <- as.dist(read.table("delta1a.txt", sep="\t", header = T, row.names = 1))
+mito_delta1a <- as.dist(read.table("mito_delta1a.txt", sep="\t", header = T, row.names = 1))
+delta1b <- as.dist(read.table("delta1b.txt", sep="\t", header = T, row.names = 1))
+mito_delta1b <- as.dist(read.table("mito_delta1b.txt", sep="\t", header = T, row.names = 1))
+delta4 <- as.dist(read.table("delta4.txt", sep="\t", header = T, row.names = 1))
+mito_delta4 <- as.dist(read.table("mito_delta4.txt", sep="\t", header = T, row.names = 1))
+spiro <- as.dist(read.table("spiro.txt", sep="\t", header = T, row.names = 1))
+mito_spiro <- as.dist(read.table("mito_spiro.txt", sep="\t", header = T, row.names = 1))
+
+#Perform Mantel tests
+mantel(mito,gamma1)
+mantel(mito,gamma3)
+mantel(mito_delta1a,delta1a)
+mantel(mito_delta1b,delta1b)
+mantel(mito_delta4,delta4)
+mantel(mito_spiro,spiro)
+
+
+
+##Draw distance scatter plots using a mito-symb distance matrix for corresponding pairs.
+#First pairwise distance of each symbiont and the corresponding mitochondrial distance were listed using a custom script.
+#Imput data example
+#<gamma1.reg.txt>
+# mito	gamma1
+# 0.062191590	0.053393803
+# 0.108098163	0.038805461
+# 0.118206633	0.048367042
+# 0.121594306	0.062128304
+# 0.065375924	0.049993988
+# ...
+gamma1_reg <- read.table("gamma1.reg.txt", sep="\t", header = T)
+gamma3_reg <- read.table("gamma3.reg.txt", sep="\t", header = T)
+delta1a_reg <- read.table("delta1a.reg.txt", sep="\t", header = T)
+delta1b_reg <- read.table("delta1b.reg.txt", sep="\t", header = T)
+delta4_reg <- read.table("delta4.reg.txt", sep="\t", header = T)
+spiro_reg <- read.table("spiro.reg.txt", sep="\t", header = T)
+
+ggplot(gamma1_reg, aes(mito, gamma1))+
+  stat_smooth(method=lm,colour=grey(0.2))+
+  geom_point()+
+  stat_density_2d(colour="skyblue",bins=9)+
+  theme_classic()+
+  ggsave(filename="gamma1_reg.pdf")
+ggplot(gamma3_reg, aes(mito, gamma3))+
+  stat_smooth(method=lm,colour=grey(0.2))+
+  geom_point()+
+  stat_density_2d(colour="skyblue",bins=9)+
+  theme_classic()+
+  ggsave(filename="gamma3_reg.pdf")
+ggplot(delta1a_reg, aes(mito, delta1a))+
+  stat_smooth(method=lm,colour=grey(0.2))+
+  geom_point()+
+  stat_density_2d(colour="skyblue",bins=9)+
+  theme_classic()+
+  ggsave(filename="delta1a_reg.pdf")
+ggplot(delta1b_reg, aes(mito, delta1b))+
+  stat_smooth(method=lm,colour=grey(0.2))+
+  geom_point()+
+  stat_density_2d(colour="skyblue",bins=9)+
+  theme_classic()+
+  ggsave(filename="delta1b_reg.pdf")
+ggplot(delta4_reg, aes(mito, delta4))+
+  stat_smooth(method=lm,colour=grey(0.2))+
+  geom_point()+
+  stat_density_2d(colour="skyblue",bins=9)+
+  theme_classic()+
+  ggsave(filename="delta4_reg.pdf")
+ggplot(spiro_reg, aes(mito, spiro))+
+  stat_smooth(method=lm,colour=grey(0.2))+
+  geom_point()+
+  stat_density_2d(colour="skyblue",bins=9)+
+  theme_classic()+
+  ggsave(filename="spiro_reg.pdf")
+```

@@ -21,6 +21,7 @@ They are downloadable from public databases with the accession numbers included 
 * Olavius algarvensis mitochondrial cytochrome oxidase subunit 1 (COI) gene sequence from NCBI 
 
 * Set of symbiont single-copy genes (non-redundant by >90% sequence ID differentiated)
+	*	<Oalg_symbionts.scg.cdhit90.single.fasta>
 
 * GToTree input files
 	*	List of symbiont bin files

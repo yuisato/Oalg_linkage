@@ -107,7 +107,9 @@ for reffile in Mito Gamma1 Gamma3 Delta1a Delta1b Delta4 Spiro; do
 	angsd -P 24 -b bam_list.txt -out ${n_ind}Samples_to_${reffile}_MinQ20_qc -ref $reffile.fasta\
 	 -trim 0 -remove_bads 0 -uniqueOnly 0 -only_proper_pairs 1 -doQsDist 1 -doDepth 1 -doCounts 1 -maxDepth 24000
 	  #Remove_bads 0 and -uniqueOnly 0 as they were already filtered from the bam files.
+	Rscript $TOOLPATH/ngsTools/Scripts/plotQC.R ${n_ind}Samples_to_${reffile}_MinQ20_qc 2> /dev/null
 	  #Distribution of read coverage is stored in <${n_ind}Samples_to_${reffile}_MinQ20_qc.info>.
+	  #For the graphics of "Sample Depth" in the output PDF, change the 'xl' value in plotQC.R as appropriate.
 	
 	echo "  ANGSD step2 for processing for haploids with inbreeding adjustment"
 	mindepth=$(sed -e '1,/Global_depth/d' ${n_ind}Samples_to_${reffile}_MinQ20_qc.info| awk '$2>0.05 {print $1}'| head -n1)
